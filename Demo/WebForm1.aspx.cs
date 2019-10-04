@@ -7,6 +7,7 @@ using System.Web.UI.WebControls;
 using System.Data;
 using System.Data.SqlClient;
 using System.Configuration;
+using System.Data.Common;
 
 namespace Demo
 {
@@ -31,13 +32,13 @@ namespace Demo
 
                 conn.Open();
 
-                using (sqlbulkcopy bc = new sqlbulkcopy(conn))
+                using (SqlBulkCopy bc = new SqlBulkCopy(conn))
                 {
-                    bc.destinationtablename = "departments";
-                    bc.columnmappings.add("id", "id");
-                    bc.columnmappings.add("name", "name");
-                    bc.columnmappings.add("location", "location");
-                    bc.writetoserver(dtdept);
+                    bc.DestinationTableName = "departments";
+                    bc.ColumnMappings.Add("ID", "ID");
+                    bc.ColumnMappings.Add("Name", "Name");
+                    bc.ColumnMappings.Add("Location", "Location");
+                    bc.WriteToServer(dtDept);
                 }
 
                 using (SqlBulkCopy bc = new SqlBulkCopy(conn))
