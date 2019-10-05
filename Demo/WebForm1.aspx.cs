@@ -13,7 +13,8 @@ namespace Demo
 {
     public partial class WebForm1 : System.Web.UI.Page
     {
-        string cs = ConfigurationManager.ConnectionStrings["CS"].ConnectionString;
+        private readonly string SourceCS = ConfigurationManager.ConnectionStrings["SourceCS"].ConnectionString;
+        private readonly string DestinationCS = ConfigurationManager.ConnectionStrings["DestinationCS"].ConnectionString;
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -22,33 +23,40 @@ namespace Demo
 
         protected void Button1_Click(object sender, EventArgs e)
         {
-            using (SqlConnection conn = new SqlConnection(cs))
+            using (SqlConnection sourceConn = new SqlConnection(SourceCS))
             {
-                DataSet ds = new DataSet();
-                ds.ReadXml(Server.MapPath("~/Data.xml"));
+                SqlCommand cmd = new SqlCommand("Select * from Departments", sourceConn);
+                sourceConn.Open();
 
-                DataTable dtDept = ds.Tables["Department"];
-                DataTable dtEmp = ds.Tables["Employee"];
+                using (SqlDataReader reader = cmd.ExecuteReader()) { 
 
-                conn.Open();
+                    using (SqlConnection destinationConn = new SqlConnection(DestinationCS))
+                    {
+                        using (SqlBulkCopy bc = new SqlBulkCopy(destinationConn))
+                        {
+                            bc.DestinationTableName = "Departments";
+                            destinationConn.Open();
+                            bc.WriteToServer(reader);
+                        }
+                    }
 
-                using (SqlBulkCopy bc = new SqlBulkCopy(conn))
-                {
-                    bc.DestinationTableName = "departments";
-                    bc.ColumnMappings.Add("ID", "ID");
-                    bc.ColumnMappings.Add("Name", "Name");
-                    bc.ColumnMappings.Add("Location", "Location");
-                    bc.WriteToServer(dtDept);
                 }
 
-                using (SqlBulkCopy bc = new SqlBulkCopy(conn))
+                cmd = new SqlCommand("Select * from Employees", sourceConn);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    bc.DestinationTableName = "Employees";
-                    bc.ColumnMappings.Add("ID", "ID");
-                    bc.ColumnMappings.Add("Name", "Name");
-                    bc.ColumnMappings.Add("Gender", "Gender");
-                    bc.ColumnMappings.Add("DepartmentId", "DepartmentId");
-                    bc.WriteToServer(dtEmp);
+
+                    using (SqlConnection destinationConn = new SqlConnection(DestinationCS))
+                    {
+                        using (SqlBulkCopy bc = new SqlBulkCopy(destinationConn))
+                        {
+                            bc.DestinationTableName = "Employees";
+                            destinationConn.Open();
+                            bc.WriteToServer(reader);
+                        }
+                    }
+
                 }
             }
         }
